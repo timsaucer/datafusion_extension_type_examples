@@ -1,0 +1,6 @@
+[package]
+name = "df_extension_types_py"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
