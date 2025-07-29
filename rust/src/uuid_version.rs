@@ -1,3 +1,4 @@
+use crate::string_to_uuid::StringToUuid;
 use arrow::array::UInt32Array;
 use arrow::datatypes::{Field, FieldRef};
 use arrow_schema::extension::CanonicalExtensionType;
@@ -22,7 +23,15 @@ impl Default for UuidVersion {
     fn default() -> Self {
         Self {
             signature: Signature::new(
-                TypeSignature::Exact(vec![DataType::FixedSizeBinary(16)]),
+                TypeSignature::Uniform(
+                    1,
+                    vec![
+                        DataType::FixedSizeBinary(16),
+                        DataType::Utf8,
+                        DataType::Utf8View,
+                        DataType::LargeUtf8,
+                    ],
+                ),
                 Volatility::Immutable,
             ),
         }
@@ -55,17 +64,26 @@ impl ScalarUDFImpl for UuidVersion {
         }
 
         let input_field = &args.arg_fields[0];
-        let Ok(CanonicalExtensionType::Uuid(_)) = input_field.try_canonical_extension_type() else {
-            return exec_err!("Input field must contain the UUID canonical extension type");
-        };
+        if &DataType::FixedSizeBinary(16) == input_field.data_type() {
+            let Ok(CanonicalExtensionType::Uuid(_)) = input_field.try_canonical_extension_type()
+            else {
+                return exec_err!("Input field must contain the UUID canonical extension type");
+            };
+        }
 
-        Ok(Arc::new(
-            Field::new(self.name(), DataType::UInt32, true)
-        ))
+        Ok(Arc::new(Field::new(self.name(), DataType::UInt32, true)))
     }
 
-    fn invoke_with_args(&self, args: ScalarFunctionArgs) -> DataFusionResult<ColumnarValue> {
-        let input = &args.args[0];
+    fn invoke_with_args(&self, mut args: ScalarFunctionArgs) -> DataFusionResult<ColumnarValue> {
+        let input = match &args.args[0].data_type() {
+            DataType::FixedSizeBinary(16) => args.args.pop().ok_or(exec_datafusion_err!(
+                "Expected one input column to uuid_version"
+            ))?,
+            _ => {
+                let string_to_uuid = StringToUuid::default();
+                string_to_uuid.invoke_with_args(args)?
+            }
+        };
 
         Ok(match input {
             ColumnarValue::Array(arr) => {

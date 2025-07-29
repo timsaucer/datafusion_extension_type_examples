@@ -1,12 +1,12 @@
-use std::sync::Arc;
 use datafusion::logical_expr::ScalarUDF;
 use datafusion_ffi::udf::FFI_ScalarUDF;
-use pyo3::prelude::*;
-use pyo3::types::PyCapsule;
 use df_extension_types::string_to_uuid::StringToUuid;
-use paste::paste;
 use df_extension_types::uuid_to_string::UuidToString;
 use df_extension_types::uuid_version::UuidVersion;
+use paste::paste;
+use pyo3::prelude::*;
+use pyo3::types::PyCapsule;
+use std::sync::Arc;
 
 macro_rules! export_rust_scalar_udf {
     ($inner_name:ident, $exported_name:literal) => {
@@ -38,7 +38,6 @@ macro_rules! export_rust_scalar_udf {
         }
     };
 }
-
 
 export_rust_scalar_udf!(StringToUuid, "StringToUuidUDF");
 export_rust_scalar_udf!(UuidVersion, "UuidVersionUDF");

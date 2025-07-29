@@ -1,18 +1,13 @@
-use datafusion::{
-    arrow::{
-        array::{ArrayRef},
-        record_batch::RecordBatch,
-    },
-};
+use datafusion::arrow::{array::ArrayRef, record_batch::RecordBatch};
 
 use datafusion::arrow::array::Int32Array;
 use datafusion::error::Result;
-use datafusion::logical_expr::{ScalarUDF};
+use datafusion::logical_expr::ScalarUDF;
 use datafusion::prelude::*;
 use df_extension_types::string_to_uuid::StringToUuid;
-use std::sync::Arc;
 use df_extension_types::uuid_to_string::UuidToString;
 use df_extension_types::uuid_version::UuidVersion;
+use std::sync::Arc;
 
 fn create_context() -> Result<SessionContext> {
     let a: ArrayRef = Arc::new(Int32Array::from((0..10).collect::<Vec<i32>>()));
@@ -34,9 +29,7 @@ async fn main() -> Result<()> {
 
     // Convert string UUIDs to canonical extension UUIDs
     let string_to_uuid = ScalarUDF::new_from_impl(StringToUuid::default());
-    df = df.with_column("uuid",
-        string_to_uuid.call(vec![col("string_uuid")]),
-    )?;
+    df = df.with_column("uuid", string_to_uuid.call(vec![col("string_uuid")]))?;
 
     // Extract version number from canonical extension UUIDs
     let version = ScalarUDF::new_from_impl(UuidVersion::default());
@@ -45,6 +38,11 @@ async fn main() -> Result<()> {
     // Convert back to a string
     let uuid_to_string = ScalarUDF::new_from_impl(UuidToString::default());
     df = df.with_column("string_round_trip", uuid_to_string.call(vec![col("uuid")]))?;
+
+    df = df.with_column(
+        "version_from_string",
+        version.call(vec![col("string_uuid")]),
+    )?;
 
     df.show().await?;
 

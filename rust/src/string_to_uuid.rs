@@ -1,12 +1,15 @@
 use arrow::array::{LargeStringArray, StringViewArray};
+use arrow::datatypes::{Field, FieldRef};
 use datafusion::arrow::array::{ArrayRef, FixedSizeBinaryArray, StringArray};
 use datafusion::arrow::datatypes::DataType;
 use datafusion::common::{exec_datafusion_err, exec_err, ScalarValue};
 use datafusion::error::Result as DataFusionResult;
-use datafusion::logical_expr::{ColumnarValue, ReturnFieldArgs, ScalarFunctionArgs, ScalarUDFImpl, Signature, TypeSignature, Volatility};
+use datafusion::logical_expr::{
+    ColumnarValue, ReturnFieldArgs, ScalarFunctionArgs, ScalarUDFImpl, Signature, TypeSignature,
+    Volatility,
+};
 use std::any::Any;
 use std::sync::Arc;
-use arrow::datatypes::{Field, FieldRef};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -24,7 +27,7 @@ impl Default for StringToUuid {
 
 macro_rules! define_from_string_array {
     ($fn_name:ident, $array_type:ty) => {
-        fn $fn_name(arr: &ArrayRef) -> DataFusionResult<ArrayRef> {
+        pub(crate) fn $fn_name(arr: &ArrayRef) -> DataFusionResult<ArrayRef> {
             let arr = arr
                 .as_any()
                 .downcast_ref::<$array_type>()
@@ -76,16 +79,22 @@ impl ScalarUDFImpl for StringToUuid {
         unimplemented!()
     }
 
-    fn return_field_from_args(&self, args: ReturnFieldArgs) -> datafusion::common::Result<FieldRef> {
+    fn return_field_from_args(
+        &self,
+        args: ReturnFieldArgs,
+    ) -> datafusion::common::Result<FieldRef> {
         if args.arg_fields.len() != 1 {
             return exec_err!("Incorrect number of arguments for string_to_uuid");
         }
         match args.arg_fields[0].data_type() {
-            DataType::Utf8 | DataType::LargeUtf8 | DataType::Utf8View => {},
+            DataType::Utf8 | DataType::LargeUtf8 | DataType::Utf8View => {}
             _ => return exec_err!("Incorrect data type for string_to_uuid"),
         }
 
-        Ok(Arc::new(Field::new(self.name(), DataType::FixedSizeBinary(16), true).with_extension_type(arrow_schema::extension::Uuid)))
+        Ok(Arc::new(
+            Field::new(self.name(), DataType::FixedSizeBinary(16), true)
+                .with_extension_type(arrow_schema::extension::Uuid),
+        ))
     }
 
     fn invoke_with_args(&self, args: ScalarFunctionArgs) -> DataFusionResult<ColumnarValue> {
