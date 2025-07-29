@@ -13,4 +13,8 @@ rust-version = "1.88"
 version = "0.1.0"
 
 [workspace.dependencies]
+arrow = "55.2.0"
+arrow-schema = "55.2.0"
 datafusion = { version = "48.0.1" }
+tokio = { version = "1.47.0", features = ["rt-multi-thread"] }
+uuid = "1.17.0"
