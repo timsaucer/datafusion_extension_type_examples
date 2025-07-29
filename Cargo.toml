@@ -16,5 +16,7 @@ version = "0.1.0"
 arrow = "55.2.0"
 arrow-schema = "55.2.0"
 datafusion = { version = "48.0.1" }
+datafusion-ffi = { version = "48.0.1" }
+df_extension_types = { path = "./rust" }
 tokio = { version = "1.47.0", features = ["rt-multi-thread"] }
 uuid = "1.17.0"

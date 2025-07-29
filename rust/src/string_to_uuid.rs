@@ -9,7 +9,7 @@ use std::sync::Arc;
 use arrow::datatypes::{Field, FieldRef};
 use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StringToUuid {
     signature: Signature,
 }

@@ -1,4 +1,4 @@
-use arrow::array::UInt32Array;
+use arrow::array::StringViewArray;
 use arrow::datatypes::{Field, FieldRef};
 use arrow_schema::extension::CanonicalExtensionType;
 use datafusion::arrow::array::FixedSizeBinaryArray;
@@ -14,11 +14,11 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
-pub struct UuidVersion {
+pub struct UuidToString {
     signature: Signature,
 }
 
-impl Default for UuidVersion {
+impl Default for UuidToString {
     fn default() -> Self {
         Self {
             signature: Signature::new(
@@ -29,13 +29,13 @@ impl Default for UuidVersion {
     }
 }
 
-impl ScalarUDFImpl for UuidVersion {
+impl ScalarUDFImpl for UuidToString {
     fn as_any(&self) -> &dyn Any {
         self
     }
 
     fn name(&self) -> &str {
-        "uuid_version"
+        "uuid_to_string"
     }
 
     fn signature(&self) -> &Signature {
@@ -59,9 +59,7 @@ impl ScalarUDFImpl for UuidVersion {
             return exec_err!("Input field must contain the UUID canonical extension type");
         };
 
-        Ok(Arc::new(
-            Field::new(self.name(), DataType::UInt32, true)
-        ))
+        Ok(Arc::new(Field::new(self.name(), DataType::Utf8View, true)))
     }
 
     fn invoke_with_args(&self, args: ScalarFunctionArgs) -> DataFusionResult<ColumnarValue> {
@@ -80,28 +78,28 @@ impl ScalarUDFImpl for UuidVersion {
                             .map(|uuid| {
                                 Uuid::from_slice(uuid)
                                     .map_err(|err| exec_datafusion_err!("{err}"))
-                                    .map(|v| v.get_version_num() as u32)
+                                    .map(|v| v.to_string())
                             })
                             .transpose()
                     })
                     .collect::<DataFusionResult<Vec<_>>>()?;
 
-                let output_array = Arc::new(UInt32Array::from(output));
+                let output_array = Arc::new(StringViewArray::from(output));
 
                 ColumnarValue::Array(output_array)
             }
             ColumnarValue::Scalar(sv) => match sv {
                 ScalarValue::FixedSizeBinary(16, data) => {
-                    let version = data
+                    let data = data
                         .as_ref()
                         .map(|uuid| {
                             Uuid::from_slice(uuid)
                                 .map_err(|err| exec_datafusion_err!("{err}"))
-                                .map(|v| v.get_version_num() as u32)
+                                .map(|v| v.to_string())
                         })
                         .transpose()?;
 
-                    ColumnarValue::Scalar(ScalarValue::UInt32(version))
+                    ColumnarValue::Scalar(ScalarValue::Utf8View(data))
                 }
                 _ => return exec_err!("Invalid data type {}", sv.data_type()),
             },

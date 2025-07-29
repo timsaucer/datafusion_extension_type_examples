@@ -4,3 +4,15 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+pyo3 = { version = "0.25", features = ["extension-module", "abi3", "abi3-py39"] }
+datafusion.workspace = true
+datafusion-ffi.workspace = true
+df_extension_types.workspace = true
+paste = "1.0.15"
+
+[build-dependencies]
+pyo3-build-config = "0.25"
+
+[lib]
+name = "df_extension_types_py"
+crate-type = ["cdylib", "rlib"]
